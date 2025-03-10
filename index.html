@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Love Flipbook</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #fff0f5;
+            font-family: Arial, sans-serif;
+        }
+
+        .book {
+            width: 300px;
+            height: 400px;
+            position: relative;
+            perspective: 1500px;
+        }
+
+        .page {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            transform-origin: left center;
+            transition: transform 1s;
+            transform-style: preserve-3d;
+            cursor: pointer;
+        }
+
+        .front, .back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+            backface-visibility: hidden;
+            background-color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .back {
+            transform: rotateY(180deg);
+            background-color: #fff9fc;
+        }
+
+        .photo {
+            width: 200px;
+            height: 250px;
+            object-fit: cover;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .message {
+            text-align: center;
+            font-size: 18px;
+            color: #ff6699;
+        }
+
+        .heart {
+            position: absolute;
+            font-size: 24px;
+            animation: float 6s linear infinite;
+            opacity: 0;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .play-button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #ff6699;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .play-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+
+        .play-icon {
+            margin-right: 8px;
+            font-size: 20px;
+        }
+        
+        .cover {
+            width: 100%;
+            height: 100%;
+            background-color: #ffcce0;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            /* Proper orientation for cover content */
+            transform: rotateY(0deg);
+        }
+        
+        .cover-title {
+            font-size: 24px;
+            color: #ff3377;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="book" id="book"></div>
+    <audio id="love-song" loop>
+        <source src="song.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    <audio id="love-song2" loop>
+        <source src="song2.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+
+    <script>
+      const pages = [
+    { isCover: true, message: 'Our Love Story' },
+    { photo: 'imgs/1.jpg', message: 'You are my sunshine! 🌞' },
+    { photo: 'imgs/2.jpg', message: 'My heart skips a beat when I see you 💓' },
+    { photo: 'imgs/3.jpg', message: 'Every day with you is special 🌸' },
+    { photo: 'imgs/4.jpg', message: 'You make my heart smile 💕' },
+    { photo: 'imgs/5.jpg', message: 'Forever yours, forever mine 💑' },
+    { photo: 'imgs/6.jpg', message: 'You are my favorite hello and hardest goodbye 👋❤️' },
+    { photo: 'imgs/7.jpg', message: 'With you, every moment is magical ✨' },
+    { photo: 'imgs/8.jpg', message: 'Together is my favorite place to be 🏡' },
+    { photo: 'imgs/9.jpg', message: 'You are the reason I believe in love 💝' },
+    { photo: 'imgs/10.jpg', message: 'Our love story is my favorite 📖❤️' },
+    { photo: 'imgs/11.jpg', message: 'Thanks for making my heart dance 💃' },
+    { photo: 'imgs/12.jpg', message: 'You complete me in every way 🧩' },
+    { photo: 'imgs/13.jpg', message: 'Every love story is beautiful, but ours is my favorite 📚' },
+    { photo: 'imgs/14.jpg', message: 'Your smile is my favorite view 😊' },
+    { photo: 'imgs/15.jpg', message: 'Being with you feels like coming home 🏠' },
+    { photo: 'imgs/16.jpg', message: 'Loving you is the easiest thing I’ve ever done ❣️' },
+    { photo: 'imgs/17.jpg', message: 'You’re the dream I never want to wake up from 💫' },
+    { photo: 'imgs/18.jpg', message: 'My favorite place in the world is next to you 🌍' },
+    { photo: 'imgs/19.jpg', message: 'I fall in love with you a little more every day 🌱' },
+    { photo: 'imgs/20.jpg', message: 'You make ordinary moments extraordinary ⭐' },
+    { isLast: true, message: 'I Love You 💖' }
+];
+
+
+
+        const book = document.getElementById('book');
+        const loveSong = document.getElementById('love-song');
+        const loveSong2 = document.getElementById('love-song2');
+        let flippedPages = new Array(pages.length).fill(false);
+        let heartAnimationActive = false;
+        let heartFrequency = 200; // Default heart animation frequency
+        
+        // Track button states
+        let firstButtonState = 0; // 0 = initial, 1 = playing, 2 = paused
+        let secondButtonState = 0; // 0 = initial, 1 = playing, 2 = paused
+
+        function createPage(content, index) {
+            const page = document.createElement('div');
+            page.className = 'page';
+            page.style.zIndex = pages.length - index;
+
+            // Create cover page
+            if (content.isCover) {
+                // Create front of cover
+                const front = document.createElement('div');
+                front.className = 'front';
+                
+                const coverContent = document.createElement('div');
+                coverContent.className = 'cover';
+                
+                const title = document.createElement('h1');
+                title.className = 'cover-title';
+                title.textContent = content.message;
+                coverContent.appendChild(title);
+                
+                const playButton = document.createElement('button');
+                playButton.className = 'play-button';
+                playButton.id = 'first-song-button';
+                
+                const playIcon = document.createElement('span');
+                playIcon.className = 'play-icon';
+                playIcon.innerHTML = '♫';
+                
+                playButton.appendChild(playIcon);
+                playButton.appendChild(document.createTextNode('Start Our Journey'));
+                
+                playButton.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent triggering page flip
+                    toggleFirstSong(playButton);
+                });
+                
+                coverContent.appendChild(playButton);
+                front.appendChild(coverContent);
+                page.appendChild(front);
+                
+                // Create back of cover
+                const back = document.createElement('div');
+                back.className = 'back';
+                page.appendChild(back);
+                
+            } else {
+                // Regular page content
+                const front = document.createElement('div');
+                front.className = 'front';
+                const back = document.createElement('div');
+                back.className = 'back';
+
+                if (content.photo) {
+                    const img = document.createElement('img');
+                    img.src = content.photo;
+                    img.className = 'photo';
+                    front.appendChild(img);
+                }
+
+                const message = document.createElement('p');
+                message.className = 'message';
+                message.textContent = content.message;
+                front.appendChild(message);
+
+                // Add play button to the last page
+                if (content.isLast) {
+                    const playButton = document.createElement('button');
+                    playButton.className = 'play-button';
+                    playButton.id = 'second-song-button';
+                    
+                    const playIcon = document.createElement('span');
+                    playIcon.className = 'play-icon';
+                    playIcon.innerHTML = '♫';
+                    
+                    playButton.appendChild(playIcon);
+                    playButton.appendChild(document.createTextNode('Play Our Special Song'));
+                    
+                    playButton.addEventListener('click', (e) => {
+                        e.stopPropagation(); // Prevent triggering page flip
+                        toggleSecondSong(playButton);
+                    });
+                    
+                    front.appendChild(playButton);
+                }
+
+                page.appendChild(front);
+                page.appendChild(back);
+            }
+
+            // Click logic for flipping
+            page.addEventListener('click', (event) => {
+                const rect = page.getBoundingClientRect();
+                const clickX = event.clientX - rect.left; 
+
+                if (clickX > rect.width / 2) {
+                    flipNext(index);
+                } else {
+                    flipPrevious(index);
+                }
+            });
+
+            return page;
+        }
+
+        function flipNext(index) {
+            if (index >= pages.length - 1) return;
+
+            const page = book.children[index];
+            if (!flippedPages[index]) {
+                page.style.transform = 'rotateY(-180deg)';
+                flippedPages[index] = true;
+            }
+        }
+
+        function flipPrevious(index) {
+            if (index <= 0) return;
+
+            const page = book.children[index - 1];
+            if (flippedPages[index - 1]) {
+                page.style.transform = 'rotateY(0deg)';
+                flippedPages[index - 1] = false;
+            }
+        }
+
+        function toggleFirstSong(button) {
+            // Pause the second song if it's playing
+            if (!loveSong2.paused) {
+                loveSong2.pause();
+                const secondButton = document.getElementById('second-song-button');
+                if (secondButton) {
+                    secondButton.textContent = '♫ Play Our Special Song';
+                    secondButtonState = 0;
+                }
+            }
+
+            firstButtonState = (firstButtonState + 1) % 3;
+            
+            switch(firstButtonState) {
+                case 1: // Play
+                    loveSong.currentTime = 0; // Reset to beginning
+                    loveSong.play();
+                    button.innerHTML = '<span class="play-icon">■</span>Pause Journey';
+                    heartFrequency = 200;
+                    createHearts();
+                    break;
+                case 2: // Pause
+                    loveSong.pause();
+                    button.innerHTML = '<span class="play-icon">▶</span>Resume Journey';
+                    // Stop heart animation
+                    clearInterval(window.heartInterval);
+                    heartAnimationActive = false;
+                    break;
+                case 0: // Restart
+                    loveSong.currentTime = 0;
+                    loveSong.play();
+                    button.innerHTML = '<span class="play-icon">■</span>Pause Journey';
+                    heartFrequency = 200;
+                    createHearts();
+                    break;
+            }
+        }
+
+        function toggleSecondSong(button) {
+            // Pause the first song if it's playing
+            if (!loveSong.paused) {
+                loveSong.pause();
+                const firstButton = document.getElementById('first-song-button');
+                if (firstButton) {
+                    firstButton.innerHTML = '<span class="play-icon">♫</span>Start Our Journey';
+                    firstButtonState = 0;
+                }
+            }
+
+            secondButtonState = (secondButtonState + 1) % 3;
+            
+            switch(secondButtonState) {
+                case 1: // Play
+                    loveSong2.currentTime = 0; // Reset to beginning
+                    loveSong2.play();
+                    button.innerHTML = '<span class="play-icon">■</span>Pause Special Song';
+                    heartFrequency = 100; // Double heart animation frequency
+                    createHearts();
+                    break;
+                case 2: // Pause
+                    loveSong2.pause();
+                    button.innerHTML = '<span class="play-icon">▶</span>Resume Special Song';
+                    // Stop heart animation
+                    clearInterval(window.heartInterval);
+                    heartAnimationActive = false;
+                    break;
+                case 0: // Restart
+                    loveSong2.currentTime = 0;
+                    loveSong2.play();
+                    button.innerHTML = '<span class="play-icon">■</span>Pause Special Song';
+                    heartFrequency = 100;
+                    createHearts();
+                    break;
+            }
+        }
+
+        function createHearts() {
+            if (heartAnimationActive) {
+                // Clear previous interval if any
+                clearInterval(window.heartInterval);
+            }
+            
+            heartAnimationActive = true;
+            
+            window.heartInterval = setInterval(() => {
+                if (!loveSong.paused || !loveSong2.paused) {
+                    const heart = document.createElement('div');
+                    heart.className = 'heart';
+                    heart.textContent = '💖';
+                    heart.style.left = Math.random() * 100 + 'vw';
+                    heart.style.fontSize = (Math.random() * 20 + 15) + 'px'; // Random size
+                    document.body.appendChild(heart);
+
+                    setTimeout(() => heart.remove(), 6000);
+                } else {
+                    clearInterval(window.heartInterval);
+                    heartAnimationActive = false;
+                }
+            }, heartFrequency);
+        }
+
+        pages.forEach((content, index) => {
+            book.appendChild(createPage(content, index));
+        });
+    </script>
+</body>
+</html>
